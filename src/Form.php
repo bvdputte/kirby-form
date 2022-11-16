@@ -155,19 +155,21 @@ class Form implements FormInterface
      * @throws TokenMismatchException If not in debug mode and the CSRF token is invalid
      * @return  boolean  whether the form validates
      */
-    public function validates()
+    public function validates($validateCSRF = true)
     {
         $app = App::instance();
 
-        $token = $app->request()->csrf() ?? $app->request()->body()->get(self::CSRF_FIELD);
-        if (empty($token) || csrf($token) !== true) {
-            if ($app->option('debug', false) === true) {
-                throw new TokenMismatchException('The CSRF token was invalid.');
-            }
-            $this->addError(self::CSRF_FIELD, I18n::translate('form-csrf-expired', 'Your session timed out. Please submit the form again.'));
-            $this->saveData();
+        if ($validateCSRF) {
+            $token = $app->request()->csrf() ?? $app->request()->body()->get(self::CSRF_FIELD);
+            if (empty($token) || csrf($token) !== true) {
+                if ($app->option('debug', false) === true) {
+                    throw new TokenMismatchException('The CSRF token was invalid.');
+                }
+                $this->addError(self::CSRF_FIELD, I18n::translate('form-csrf-expired', 'Your session timed out. Please submit the form again.'));
+                $this->saveData();
 
-            return false;
+                return false;
+            }
         }
 
         $validator = new Validator($this->data, $this->rules, $this->messages);
